@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MVP - Printable Sports Registration Form Generator</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#F1B241',
+                        'secondary-dark': '#1D1D1D',
+                        'secondary-light': '#EDE8E7',
+                        'secondary-white': '#FFFFFF'
+                    },
+                    fontFamily: { sans: ['Roboto', 'ui-sans-serif', 'system-ui'] }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+        html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+
+        .editable-input { background: transparent; border: 1px dashed #9ca3af; border-radius: 4px; padding: 6px 8px; width: 100%; transition: all 0.2s ease-in-out; }
+        .editable-input:focus { background: white; outline: 2px solid #F1B241; border-color: transparent; }
+        .template-card-selected { border-color: #F1B241 !important; box-shadow: 0 0 0 3px rgba(241, 178, 65, 0.4); transform: translateY(-2px); }
+
+        .print-page { width: 8.5in; height: 11in; background: white; color: #1D1D1D; font-family: 'Roboto', sans-serif; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; overflow: hidden; transition: transform 0.1s ease-out; transform-origin: 50% 0; }
+        #visible-print-area { position: relative; overflow: visible; display: flex; flex-direction: column; align-items: center; }
+        .print-page-inner { position: absolute; top: 0.75in; right: 0.75in; bottom: 0.75in; left: 0.75in; overflow: hidden; }
+        .page-separator { border-top: 2px dashed #e5e7eb; margin: 18px auto; width: 90%; }
+
+        .form-title { text-transform: uppercase; font-weight: 900; font-size: 1.5rem; letter-spacing: 1px; border-bottom: 3px solid #F1B241; display: inline-block; padding-bottom: 6px; margin-bottom: 14px; }
+        .intro-text { font-size: 0.95rem; color: #333; margin-bottom: 16px; white-space: pre-wrap; word-break: break-word; font-weight: 400; }
+        .section-title { border-left: 4px solid #F1B241; padding-left: 10px; font-weight: 700; font-size: 1.1rem; margin-bottom: 10px; margin-top: 1.25rem; }
+        .field-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
+        .field-label { font-size: 0.9rem; flex: 0 0 45%; font-weight: 500; margin-bottom: 2px; }
+        .field-line { flex: 1; border-bottom: 1px solid #999; margin-left: 10px; }
+
+        @media (max-width: 768px) { .steps-wrapper { flex-direction: column; text-align: center; gap: 0.5rem; } .field-row { flex-direction: column; align-items: flex-start; } .field-line { margin-left: 0; width: 100%; margin-top: 4px; } }
+
+        body.is-exporting #visible-print-area .print-page-wrapper { transform: none !important; margin-bottom: 0 !important; }
+        body.is-exporting #visible-print-area .print-page { transform: none !important; left: 0 !important; position: relative !important; }
+        body.is-exporting .form-title { border-bottom-color: #000000; }
+        body.is-exporting .section-title { border-left-color: #000000; }
+        body.is-exporting .text-primary { color: #000000 !important; }
+        body.is-exporting .bg-primary { background-color: #000000 !important; }
+        body.is-exporting .text-primary, body.is-exporting .border-primary { color: #000 !important; border-color: #000 !important; }
+
+        .editor-page-break { margin: 1.5rem 0; border-top: 2px dashed #f87171; padding-top: 0.5rem; text-align: center; color: #dc2626; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; }
+        .editor-field-page-break { margin: 1rem 0 0.5rem; border-top: 1px dashed #fca5a5; padding-top: 0.25rem; text-align: center; color: #ef4444; font-size: 0.7rem; font-weight: 500; }
+    </style>
+</head>
+
+<body class="bg-secondary-light text-secondary-dark font-sans" x-data="formApp" x-init="init()">
+    <section id="builder" class="max-w-7xl mx-auto px-4 py-12">
+
+        <div class="flex flex-col items-center text-center mb-8">
+             <h1 class="text-4xl md:text-5xl font-extrabold text-secondary-dark mb-3">Create <span class="text-primary">Printable Sports Registration Forms</span></h1>
+             <p class="text-lg text-gray-600 max-w-2xl">Choose a sport, customize it, and download your ready-to-print PDF.</p>
+        </div>
+        <div class="w-full flex items-center justify-center steps-wrapper mb-10 text-base font-semibold space-x-4 md:space-x-8">
+             <button type="button" @click="goToStep(1)" class="flex items-center space-x-2 group"><div class="w-8 h-8 flex items-center justify-center rounded-full font-bold transition" :class="currentStep >= 1 ? 'bg-primary text-secondary-dark' : 'bg-gray-200 text-gray-600 group-hover:bg-gray-300'">1</div><span :class="currentStep >= 1 ? 'text-secondary-dark' : 'text-gray-500 group-hover:text-gray-700'">Choose Template</span></button>
+             <div class="hidden md:block h-1 w-10 bg-gray-300"></div>
+             <button type="button" @click="goToStep(2)" class="flex items-center space-x-2 group"><div class="w-8 h-8 flex items-center justify-center rounded-full font-bold transition" :class="currentStep >= 2 ? 'bg-primary text-secondary-dark' : 'bg-gray-200 text-gray-600 group-hover:bg-gray-300'">2</div><span :class="currentStep >= 2 ? 'text-secondary-dark' : 'text-gray-500 group-hover:text-gray-700'">Customize & Download</span></button>
+        </div>
+
+        <div x-show="currentStep === 1">
+            <div class="max-w-xl mx-auto mb-6">
+                <label for="more-sports" class="block text-center text-lg font-semibold mb-3">Choose a sport or start custom:</label>
+                <select id="more-sports" @change="selectedTemplateId = $event.target.value" class="w-full p-3 border-2 border-gray-300 rounded-lg bg-white shadow-sm focus:border-primary focus:ring-primary">
+                    <option value="" selected disabled>Select a template or custom form...</option>
+                    <template x-for="template in dropdownTemplates" :key="template.id">
+                        <option :value="template.id" x-text="template.name"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <template x-for="template in cardTemplates" :key="template.id">
+                    <div @click="selectTemplate(template.id)" class="relative border-2 border-gray-200 bg-secondary-white rounded-xl p-6 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md" :class="{ 'template-card-selected': selectedTemplateId === template.id }">
+                        <div class="text-5xl mb-3" x-text="template.icon"></div>
+                        <h3 class="text-lg font-semibold mb-1" x-text="template.name"></h3>
+                        <p class="text-sm text-gray-500" x-text="template.description"></p>
+                        <div x-show="selectedTemplateId === template.id" class="absolute top-4 right-4 text-primary text-2xl">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            <div class="text-center"><button x-show="selectedTemplateId" @click="selectTemplate(selectedTemplateId)" class="px-6 py-3 bg-primary hover:opacity-90 text-secondary-dark rounded-lg font-semibold shadow">Customize Form →</button></div>
+        </div>
+
+        <div x-show="currentStep === 2">
+            <div class="flex justify-between items-center mb-8 flex-wrap gap-4"><h2 class="text-3xl font-bold">Customize & Download</h2><button @click="goToStep(1)" class="text-sm md:text-base font-semibold text-gray-600 hover:text-primary">← Back to Choose Template</button></div>
+            <div class="max-w-3xl mx-auto"><div class="space-y-6">
+                <div class="bg-secondary-white border-2 border-gray-200 rounded-lg p-6 shadow-sm"><h3 class="font-semibold text-lg mb-2">Add Your Logo</h3><input type="file" accept="image/*" @change="handleLogoUpload" x-ref="logoInput" class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30"/><button x-show="logoUrl" @click="logoUrl = null; $refs.logoInput.value = ''; recalcPages();" class="text-xs text-red-500 hover:underline ml-4">Remove Logo</button><p class="mt-2 text-xs text-gray-500">Recommended: High-res PNG, landscape orientation. Max height: 1.2 inches.</p></div>
+                <div class="bg-secondary-white border-2 border-gray-200 rounded-lg p-6 shadow-sm"><h3 class="font-semibold text-lg mb-4">Form Title</h3><input type="text" class="editable-input text-lg font-medium" x-model="formSchema.title" @input.debounce.500ms="recalcPages()" /></div>
+                <div class="bg-secondary-white border-2 border-gray-200 rounded-lg p-6 shadow-sm"><div class="flex items-center justify-between mb-3"><h3 class="font-semibold text-lg">Intro Text (optional)</h3><template x-if="formSchema.introText !== null && formSchema.introText !== undefined"><button @click="formSchema.introText = null; recalcPages();" class="text-xs text-red-500 hover:underline">Remove</button></template></div><template x-if="formSchema.introText === null || formSchema.introText === undefined"><button @click="ensureIntroText()" class="px-3 py-2 text-sm border border-primary text-primary rounded hover:bg-primary/10">+ Add Intro Text</button></template><template x-if="formSchema.introText !== null && formSchema.introText !== undefined"><textarea class="editable-input mt-2" rows="4" x-model="formSchema.introText" @input.debounce.500ms="recalcPages()"></textarea></template></div>
+                <div class="bg-secondary-white border-2 border-gray-200 rounded-lg p-6 shadow-sm"><h3 class="font-semibold text-lg mb-4">Footer Customization</h3><div class="space-y-3"><div class="flex items-center"><input type="checkbox" id="showBranding" x-model="showBranding" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded mr-2"><label for="showBranding" class="text-sm text-gray-700">Show text in footer</label></div><div x-show="showBranding"><label for="footerText" class="block text-sm font-medium text-gray-700 mb-1">Footer Text:</label><input type="text" id="footerText" x-model="footerText" class="editable-input text-sm"><p class="mt-1 text-xs text-gray-500">This text appears on the left side of the footer.</p></div></div></div>
+                <template x-for="(section, sectionIndex) in formSchema.sections" :key="sectionIndex"><div><template x-if="section.startsNewPage"><div class="editor-page-break">--- Page <span x-text="section.pageNumber"></span> Starts Here ---</div></template><div class="bg-secondary-white border-2 border-gray-200 rounded-lg p-6 shadow-sm"><div class="flex justify-between items-center mb-4"><input type="text" class="editable-input font-semibold text-lg flex-grow mr-4" x-model="section.title" @input.debounce.500ms="recalcPages()" /><div class="flex items-center space-x-2 flex-shrink-0"><button @click="moveSectionUp(sectionIndex)" :disabled="sectionIndex === 0" class="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed" title="Move Section Up"><i class="fas fa-arrow-up"></i></button><button @click="moveSectionDown(sectionIndex)" :disabled="sectionIndex === formSchema.sections.length - 1" class="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed" title="Move Section Down"><i class="fas fa-arrow-down"></i></button><button @click="deleteSection(sectionIndex)" class="text-gray-400 hover:text-red-500" title="Delete Section"><i class="fas fa-trash"></i></button></div></div><ul class="space-y-3"><template x-for="(field, fieldIndex) in section.fields" :key="fieldIndex"><li><template x-if="field.startsNewPage"><div class="editor-field-page-break">(Page <span x-text="field.pageNumber"></span> starts before this field)</div></template><div class="flex items-center group"><span class="text-gray-400 mr-2">•</span><input type="text" class="editable-input text-sm text-gray-700 flex-grow" x-model="field.label" @input.debounce.500ms="recalcPages()" /><button @click="deleteField(sectionIndex, fieldIndex)" class="ml-2 text-gray-300 group-hover:text-red-500 text-xs transition-colors"><i class="fas fa-times-circle"></i></button></div></li></template></ul><button @click="addField(sectionIndex)" class="mt-4 text-sm text-primary font-semibold hover:opacity-80">+ Add Field</button></div></div></template>
+                <button @click="addSection()" class="w-full py-3 border-2 border-dashed border-primary text-primary rounded-lg font-semibold hover:bg-primary/10">+ Add Field Section</button>
+                <div class="pt-4 space-y-3"><div x-show="isDownloading" class="text-center mb-2"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div><p class="mt-2 text-gray-600 text-sm" x-text="loadingText"></p></div><button @click="openPreview()" :disabled="isDownloading" class="w-full px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white text-lg rounded-lg shadow-lg font-semibold disabled:opacity-50 disabled:cursor-wait">Preview Form</button><button @click="downloadPDF()" :disabled="isDownloading" class="w-full px-8 py-3 bg-primary hover:opacity-90 text-secondary-dark text-lg rounded-lg shadow-lg font-semibold disabled:opacity-50 disabled:cursor-wait"><span x-show="!isDownloading || !loadingText.includes('Download')">Download PDF</span><span x-show="isDownloading && loadingText.includes('Download')">Generating...</span></button></div>
+            </div></div>
+        </div>
+    </section>
+
+    <iframe id="print-iframe" style="display: none;"></iframe>
+
+    <div x-show="showPreview" @keydown.escape.window="closePreview()" style="display: none;">
+        <div @click="closePreview()" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40"></div>
+        <div class="fixed inset-0 z-50 flex items-start justify-center p-4 md:p-12">
+            <div class="bg-secondary-light rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
+                <div class="flex items-center justify-between p-4 border-b border-gray-300 flex-shrink-0">
+                    <h3 class="text-lg font-semibold">Form Preview</h3>
+                    <div class="flex items-center space-x-3">
+                        <button @click="downloadPDF()" :disabled="isDownloading" class="px-4 py-1.5 bg-primary hover:opacity-90 text-secondary-dark text-sm rounded-md font-semibold disabled:opacity-50 disabled:cursor-wait"><i class="fas fa-download mr-1.5"></i><span x-show="!isDownloading || !loadingText.includes('Download')">Download PDF</span><span x-show="isDownloading && loadingText.includes('Download')">Generating...</span></button>
+                        <button @click="closePreview()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto px-6 pb-6" x-ref="previewContainer">
+                    <template x-if="pages.length === 0"><div class="text-center text-gray-500 p-8 border-2 border-dashed rounded-lg">Your form preview will appear here.</div></template>
+                    <div id="visible-print-area" class="pb-4" :style="pageContainerStyle">
+                        <template x-for="(page, pIndex) in pages" :key="'page-'+pIndex">
+                            <div class="print-page-wrapper" :style="pageScaleStyle">
+                                <div class="print-page">
+                                    <div class="print-page-inner">
+                                        <template x-if="pIndex === 0"><div><div x-show="logoUrl" class="text-center mb-4"><img :src="logoUrl" alt="Team Logo" style="max-height: 1.2in; max-width: 100%; margin: 0 auto;" /></div><h1 class="form-title" x-text="formSchema.title"></h1><p x-show="formSchema.introText" class="intro-text" x-text="formSchema.introText"></p></div></template>
+                                        <template x-for="(item, i) in page.items" :key="'i-'+i"><div><div x-show="item.type === 'section_title'" class="section-title" x-text="item.text"></div><div x-show="item.type === 'field'" class="field-row"><span class="field-label" x-text="item.text"></span><span class="field-line"></span></div></div></template>
+                                        <div x-show="showBranding || pages.length > 1"
+                                             style="position: absolute; left: 0.75in; right: 0.75in;
+                                                     bottom: 0.7in; /* Keep it higher */
+                                                     border-top: 1px solid #ddd; padding-top: 8px;
+                                                     font-size: 0.75rem; color: #555; line-height: 1;
+                                                     display: flex;
+                                                     justify-content: space-between;
+                                                     align-items: center;">
+                                             <span x-show="showBranding" style="margin-right: 1rem;" x-text="footerText"></span>
+                                             <span x-text="`Page ${pIndex+1} of ${pages.length}`"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div x-show="pIndex < pages.length - 1" class="page-separator"></div>
+                        </template>
+                    </div>
+                    <div x-show="pageLimitReached" class="mt-2 p-3 rounded-md bg-red-50 text-red-700 text-sm border border-red-200">You’ve reached the printable limit (<strong>3 pages</strong>). Please remove fields or sections to fit.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('formApp', () => {
+                const { jsPDF } = window.jspdf;
+
+                const DPI = 96; const PAGE_W_IN = 8.5; const PAGE_H_IN = 11;
+                const PAGE_W_PX = Math.round(PAGE_W_IN * DPI); const PAGE_H_PX = Math.round(PAGE_H_IN * DPI);
+                const MARGIN_IN = 0.75; const CONTENT_H_PX = Math.round((PAGE_H_IN - MARGIN_IN * 2) * DPI);
+                const MAX_PAGES = 3;
+
+                const H = { title: 64, logo: 120, introBase: 28, introLine: 22, sectionTitle: 48, field: 26, spacingSmall: 10, spacingSection: 0, footerPad: 64, introCharsPerLine: 70, titleCharsPerLine: 60, fieldCharsPerLine: 35, titleLineHeight: 24, fieldLineHeight: 20, titleBasePadding: 18, fieldBasePadding: 1 };
+                const SAFETY = 0;
+
+                const baseTemplates = { 
+                    // NEW CUSTOM TEMPLATE ADDED HERE
+                    custom: {
+                        id: 'custom',
+                        name: 'Create a Custom Form',
+                        icon: '✨',
+                        description: 'Start with a blank form and build from scratch.',
+                        schema: {
+                            title: "Custom Registration Form",
+                            introText: null,
+                            sections: [
+                                { title: "Contact Information", fields: [{ label: "Full Name" }, { label: "Email" }] }
+                            ]
+                        }
+                    },
+                    // EXISTING TEMPLATES FOLLOW
+                    lacrosse:{id:'lacrosse',name:'Lacrosse Camp',icon:'🥍',description:'Player position, grade, parent contact.',schema:{title:"Lacrosse Camp Registration",introText:null,sections:[{title:"Player Information",fields:[{label:"Player Name"},{label:"Date of Birth"},{label:"Grade"},{label:"Position (A/M/D/G)"}]},{title:"Parent/Guardian Contact",fields:[{label:"Contact Name"},{label:"Email"},{label:"Mobile Phone"}]},{title:"Waiver",fields:[{label:"I agree to the liability waiver"}]}]}}, 
+                    football:{id:'football',name:'Football League',icon:'🏈',description:'Age group, equipment sizes, emergency contact.',schema:{title:"Youth Football League Sign-Up",introText:null,sections:[{title:"Player Information",fields:[{label:"Player Name"},{label:"Age Group (e.g., U12)"}]},{title:"Equipment",fields:[{label:"Helmet Size"},{label:"Shoulder Pad Size"}]},{title:"Emergency Contact",fields:[{label:"Contact Name"},{label:"Phone"}]}]}}, 
+                    baseball:{id:'baseball',name:'Baseball / Softball',icon:'⚾',description:'Throwing/Batting hand, positions.',schema:{title:"Little League Registration",introText:null,sections:[{title:"Player Information",fields:[{label:"Player Name"},{label:"Date of Birth"}]},{title:"Details",fields:[{label:"Throwing Hand (L/R)"},{label:"Batting Hand (L/R)"},{label:"Primary Position"}]}]}}, 
+                    marathon:{id:'marathon',name:'Marathon / 5K',icon:'🏃',description:'Runner info, shirt size, emergency contact.',schema:{title:"Race Registration",introText:null,sections:[{title:"Runner Information",fields:[{label:"Full Name"},{label:"Date of Birth"},{label:"Gender"}]},{title:"Race Details",fields:[{label:"Event (Marathon/Half/5K)"},{label:"Estimated Finish Time"},{label:"T-Shirt Size (Unisex)"}]},{title:"Emergency Contact",fields:[{label:"Contact Name"},{label:"Contact Phone"}]}]}}, 
+                    soccer:{id:'soccer',name:'Soccer',icon:'⚽',description:'Jersey size, guardian contact, waiver.',schema:{title:"Youth Soccer Camp Registration",introText:"Camp runs from July 15-19. Please pack a lunch and water bottle.",sections:[{title:"Player Information",fields:[{label:"First Name"},{label:"Last Name"},{label:"Date of Birth"},{label:"Gender"}]},{title:"Parent/Guardian Contact",fields:[{label:"Contact Name"},{label:"Email"},{label:"Mobile Phone"}]},{title:"Uniform",fields:[{label:"Jersey Size (e.g., YM, AL)"}]},{title:"Waiver",fields:[{label:"I agree to the Code of Conduct"},{label:"I consent to photo/video usage"}]}]}}, 
+                    basketball:{id:'basketball',name:'Basketball',icon:'🏀',description:'Position, grade, experience.',schema:{title:"Basketball Tryout Sign-Up",introText:null,sections:[{title:"Player Information",fields:[{label:"Full Name"},{label:"Date of Birth"},{label:"Grade (as of Fall)"}]},{title:"Preferences",fields:[{label:"Preferred Position"}]},{title:"Experience",fields:[{label:"Previous Team"},{label:"Years Played"}]}]}}, 
+                    volleyball:{id:'volleyball',name:'Volleyball',icon:'🏐',description:'Skill level, positions.',schema:{title:"Volleyball Skills Clinic",introText:null,sections:[{title:"Player Information",fields:[{label:"Player Name"},{label:"Skill Level (Beginner/Intermediate/Advanced)"}]},{title:"Contact",fields:[{label:"Parent/Guardian Name"},{label:"Email"}]}]}}, 
+                    track:{id:'track',name:'Track & Field',icon:'🏃‍♀️',description:'Event entries, athlete details.',schema:{title:"Track & Field Meet Entry",introText:null,sections:[{title:"Athlete Information",fields:[{label:"Athlete Name"},{label:"Date of Birth"}]},{title:"Events",fields:[{label:"Event 1 (e.g., 100m Dash)"},{label:"Event 2 (e.g., Long Jump)"}]}]}}, 
+                    wrestling:{id:'wrestling',name:'Wrestling',icon:'🤼',description:'Weight class, contact.',schema:{title:"Wrestling Club Sign-Up",introText:null,sections:[{title:"Wrestler Information",fields:[{label:"Wrestler Name"},{label:"Weight Class"}]},{title:"Contact",fields:[{label:"Parent/Guardian"},{label:"Phone"}]}]}}, 
+                    tennis:{id:'tennis',name:'Tennis',icon:'🎾',description:'USTA rating, contact.',schema:{title:"Tennis Tournament Entry",introText:null,sections:[{title:"Player Information",fields:[{label:"Player Name"},{label:"USTA Rating (if any)"}]},{title:"Contact",fields:[{label:"Email"},{label:"Phone"}]}]}} 
+                };
+
+                return {
+                    currentStep: 1, selectedTemplateId: null, isDownloading: false, loadingText: '',
+                    showPreview: false, templates: baseTemplates, justBrokePage: false,
+                    // UPDATED: Show Custom, Basketball, Marathon as the default cards
+                    cardTemplates: [baseTemplates.custom, baseTemplates.basketball, baseTemplates.marathon],
+                    // UPDATED: Put Custom first in the dropdown
+                    dropdownTemplates: [baseTemplates.custom, ...Object.values(baseTemplates).filter(t => t.id !== 'custom')],
+                    formSchema: { title: '', introText: null, sections: [] },
+                    logoUrl: null, pages: [], pageLimitReached: false,
+                    pageScaleStyle: 'transform: scale(1);', pageContainerStyle: 'height: auto;',
+                    showBranding: true, footerText: 'Created with mvpvisuals.com',
+
+                    // INIT FUNCTION REMAINS CLEAN
+                    init() { this.$watch('currentStep', (nS) => { if(nS===2){this.$nextTick(()=>this.setupResizeObserver());}}); window.addEventListener('resize', ()=>{if(this.showPreview){this.calculateScale();}}); },
+                    setupResizeObserver() { if(this.$refs.previewContainer){new ResizeObserver(()=>{if(this.showPreview){this.calculateScale();}}).observe(this.$refs.previewContainer);} },
+                    openPreview() { this.showPreview = true; this.$nextTick(()=>{this.calculateScale();}); },
+                    closePreview() { this.showPreview = false; },
+                    calculateScale() { const PW=816; const PH=1056; let cW=this.$refs.previewContainer?this.$refs.previewContainer.clientWidth:0; if(cW===0){cW=window.innerWidth*0.8;} const P=48; const uW=cW-P; let s=1; if(uW<PW){s=uW/PW;} s=Math.min(1,s); const g=PH*(1-s); const nM=-g; this.pageScaleStyle=`transform: scale(${s}); margin-bottom: ${nM}px;`; this.pageContainerStyle='height: auto;'; },
+                    goToStep(step) { if(this.isDownloading)return; if(step<this.currentStep){this.currentStep=step;return;} if(step===2){if(!this.formSchema.sections.length&&!this.formSchema.title)return; this.currentStep=2;return;} },
+                    selectTemplate(tId) { if(!tId||!this.templates[tId])return; const t=this.templates[tId]; this.selectedTemplateId=tId; this.formSchema=JSON.parse(JSON.stringify(t.schema)); this.currentStep=2; this.$nextTick(()=>{this.recalcPages();}); },
+                    addField(sI) { this.formSchema.sections[sI].fields.push({label:"New Field"}); this.recalcPages(); },
+                    deleteField(sI,fI) { this.formSchema.sections[sI].fields.splice(fI,1); this.recalcPages(); },
+                    addSection() { this.formSchema.sections.push({title:"New Section",fields:[{label:"New Field"}]}); this.recalcPages(); },
+                    deleteSection(sI) { this.formSchema.sections.splice(sI,1); this.recalcPages(); },
+                    ensureIntroText() { if(this.formSchema.introText===null||this.formSchema.introText===undefined){ this.formSchema.introText="Provide info..."; this.recalcPages();} },
+                    handleLogoUpload(e) { const f=e.target.files[0]; if(f){const r=new FileReader(); r.onload=(ev)=>{this.logoUrl=ev.target.result;this.recalcPages();}; r.readAsDataURL(f);} },
+                    moveSectionUp(index) { if (index === 0) return; [this.formSchema.sections[index], this.formSchema.sections[index - 1]] = [this.formSchema.sections[index - 1], this.formSchema.sections[index]]; this.recalcPages(); },
+                    moveSectionDown(index) { if (index === this.formSchema.sections.length - 1) return; [this.formSchema.sections[index], this.formSchema.sections[index + 1]] = [this.formSchema.sections[index + 1], this.formSchema.sections[index]]; this.recalcPages(); },
+
+                    recalcPages() {
+                        this.formSchema.sections.forEach(s => { delete s.startsNewPage; delete s.pageNumber; if (s.fields) { s.fields.forEach(f => { delete f.startsNewPage; delete f.pageNumber; });}});
+                        this.justBrokePage = false; const pages = []; let used = 0;
+                        if (!this.formSchema || !Array.isArray(this.formSchema.sections)) { this.pages = []; this.pageLimitReached = false; if(this.showPreview) this.$nextTick(() => this.calculateScale()); return; }
+                        if (this.logoUrl) used += H.logo + SAFETY; if (this.formSchema.title) used += H.title + SAFETY;
+                        if (this.formSchema.introText) { const cPL=H.introCharsPerLine; const lns=this.formSchema.introText.split('\n').reduce((a,l)=>a+Math.max(1,Math.ceil((l.length||1)/cPL)),0); used+=H.introBase+lns*H.introLine+SAFETY;}
+                        pages.push({ items: [] }); let cH = used; this.pageLimitReached = false; let cPN = 1;
+                        const newPage = () => { if (pages.length >= MAX_PAGES) { this.pageLimitReached = true; return false; } pages.push({ items: [] }); cH = 0; this.justBrokePage = true; cPN++; return true; };
+                        outer: for (let sI = 0; sI < this.formSchema.sections.length; sI++) { const s = this.formSchema.sections[sI]; if (!s || !s.title) continue;
+                            const tT=s.title||'New Section'; const tL=Math.max(1,Math.ceil((tT.length||1)/H.titleCharsPerLine)); const hH=H.titleBasePadding+(tL*H.titleLineHeight)+H.spacingSmall+SAFETY+20;
+                            let fFH=0; if(Array.isArray(s.fields)&&s.fields.length>0){const f=s.fields[0]; const fL=f.label||'New Field'; const fLs=Math.max(1,Math.ceil((fL.length||1)/H.fieldCharsPerLine)); fFH=H.fieldBasePadding+(fLs*H.fieldLineHeight)+SAFETY;}
+                            if (cH + hH + fFH > CONTENT_H_PX - H.footerPad) { if (!newPage()) break outer; }
+                            if (this.justBrokePage && pages.length > 1) { s.startsNewPage = true; s.pageNumber = cPN; this.justBrokePage = false; }
+                            pages[pages.length-1].items.push({type:'section_title', text: s.title}); cH += hH;
+                            if (Array.isArray(s.fields)) { for (let fI = 0; fI < s.fields.length; fI++) { const f = s.fields[fI]; const fL=f.label||'New Field'; const fLs=Math.max(1,Math.ceil((fL.length||1)/H.fieldCharsPerLine)); const n=H.fieldBasePadding+(fLs*H.fieldLineHeight)+SAFETY;
+                                if (cH + n > CONTENT_H_PX - H.footerPad) { if (!newPage()) break outer; if (this.justBrokePage && pages.length > 1) { f.startsNewPage = true; f.pageNumber = cPN; if (!s.startsNewPage) { s.startsNewPage = true; s.pageNumber = cPN; } this.justBrokePage = false; }}
+                                pages[pages.length-1].items.push({type:'field', text: f.label||'New Field'}); cH += n; }}
+                        }
+                        this.pages = pages.slice(0, MAX_PAGES); if(this.showPreview) this.$nextTick(() => this.calculateScale());
+                    },
+
+                    async _generateFullPDF() { if (!this.pages.length) return null; const wPO = this.showPreview; if (!wPO) { this.showPreview = true; await Alpine.nextTick(); } document.body.classList.add('is-exporting'); const pN = document.querySelectorAll('#visible-print-area .print-page'); if (pN.length === 0) { console.error("Render area empty"); document.body.classList.remove('is-exporting'); if (!wPO) this.showPreview = false; return null; } const oSS = this.pageScaleStyle; this.pageScaleStyle = 'transform: none !important; margin-bottom: 0 !important;'; this.pageContainerStyle = 'height: auto !important;'; await Alpine.nextTick(); const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'letter', putOnlyUsedFonts: true }); const LWPT = doc.internal.pageSize.getWidth(); const LHPT = doc.internal.pageSize.getHeight(); for (let i = 0; i < pN.length; i++) { const n = pN[i]; this.loadingText = `Rendering Page ${i + 1} of ${pN.length}...`; const cv = await html2canvas(n, { scale: 3, useCORS: true, }); const iD = cv.toDataURL('image/png'); if (i > 0) doc.addPage(); doc.addImage(iD, 'PNG', 0, 0, LWPT, LHPT); } document.body.classList.remove('is-exporting'); this.pageScaleStyle = oSS; if (!wPO) { this.showPreview = false; } else { this.$nextTick(() => this.calculateScale()); } return doc; },
+                    async downloadPDF() { if(this.isDownloading)return; this.isDownloading=true; this.loadingText='Generating Download...'; const doc=await this._generateFullPDF(); if(doc){const fN=`${(this.formSchema.title||'MVP_Form').replace(/\s+/g,'_')}.pdf`; doc.save(fN);} this.isDownloading=false; this.loadingText=''; },
+                    async printPDF() { /* Removed */ }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+please review this web app and tell me if you see any logic errors or red lfags or issues. also need you to see if there's glaring css inefficiencies or anything that you see as problematic basically audit this like you are expert software engineer and coder
