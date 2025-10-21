@@ -40,6 +40,7 @@
         .template-card-selected { border-color: #F1B241 !important; box-shadow: 0 0 0 3px rgba(241, 178, 65, 0.4); transform: translateY(-2px); }
 
         .print-page { width: 8.5in; height: 11in; background: white; color: #1D1D1D; font-family: 'Roboto', sans-serif; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; overflow: hidden; transition: transform 0.1s ease-out; transform-origin: 50% 0; }
+        .print-page-wrapper { transform-origin: 50% 0; }
         #visible-print-area { position: relative; overflow: visible; display: flex; flex-direction: column; align-items: center; }
         .print-page-inner { position: absolute; top: 0.75in; right: 0.75in; bottom: 0.75in; left: 0.75in; overflow: hidden; }
         .page-separator { border-top: 2px dashed #e5e7eb; margin: 18px auto; width: 90%; }
@@ -70,13 +71,17 @@
     <section id="builder" class="max-w-7xl mx-auto px-4 py-12">
 
         <div class="flex flex-col items-center text-center mb-8">
-             <h1 class="text-4xl md:text-5xl font-extrabold text-secondary-dark mb-3">Create <span class="text-primary">Printable Sports Registration Forms</span></h1>
-             <p class="text-lg text-gray-600 max-w-2xl">Choose a sport, customize it, and download your ready-to-print PDF.</p>
+          <img src="https://cdn.shopify.com/s/files/1/0250/3408/files/mvp-visuals-logo-full-color-rgb-900px-w-72ppi.png" 
+          alt="MVP Visuals Logo" 
+          class="w-32 md:w-48 h-auto mb-4"
+        />  
+          <h1 class="text-4xl md:text-5xl font-extrabold text-secondary-dark mb-3">Create Printable <span class="text-primary">Sports Registration Forms</span></h1>
+              <p class="text-lg text-gray-600 max-w-2xl">Choose a sport, customize it, and download your ready-to-print PDF.</p>
         </div>
         <div class="w-full flex items-center justify-center steps-wrapper mb-10 text-base font-semibold space-x-4 md:space-x-8">
-             <button type="button" @click="goToStep(1)" class="flex items-center space-x-2 group"><div class="w-8 h-8 flex items-center justify-center rounded-full font-bold transition" :class="currentStep >= 1 ? 'bg-primary text-secondary-dark' : 'bg-gray-200 text-gray-600 group-hover:bg-gray-300'">1</div><span :class="currentStep >= 1 ? 'text-secondary-dark' : 'text-gray-500 group-hover:text-gray-700'">Choose Template</span></button>
-             <div class="hidden md:block h-1 w-10 bg-gray-300"></div>
-             <button type="button" @click="goToStep(2)" class="flex items-center space-x-2 group"><div class="w-8 h-8 flex items-center justify-center rounded-full font-bold transition" :class="currentStep >= 2 ? 'bg-primary text-secondary-dark' : 'bg-gray-200 text-gray-600 group-hover:bg-gray-300'">2</div><span :class="currentStep >= 2 ? 'text-secondary-dark' : 'text-gray-500 group-hover:text-gray-700'">Customize & Download</span></button>
+              <button type="button" @click="goToStep(1)" class="flex items-center space-x-2 group"><div class="w-8 h-8 flex items-center justify-center rounded-full font-bold transition" :class="currentStep >= 1 ? 'bg-primary text-secondary-dark' : 'bg-gray-200 text-gray-600 group-hover:bg-gray-300'">1</div><span :class="currentStep >= 1 ? 'text-secondary-dark' : 'text-gray-500 group-hover:text-gray-700'">Choose Template</span></button>
+              <div class="hidden md:block h-1 w-10 bg-gray-300"></div>
+              <button type="button" @click="goToStep(2)" class="flex items-center space-x-2 group"><div class="w-8 h-8 flex items-center justify-center rounded-full font-bold transition" :class="currentStep >= 2 ? 'bg-primary text-secondary-dark' : 'bg-gray-200 text-gray-600 group-hover:bg-gray-300'">2</div><span :class="currentStep >= 2 ? 'text-secondary-dark' : 'text-gray-500 group-hover:text-gray-700'">Customize & Download</span></button>
         </div>
 
         <div x-show="currentStep === 1">
@@ -131,7 +136,7 @@
                         <button @click="closePreview()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                     </div>
                 </div>
-                <div class="flex-1 overflow-y-auto px-6 pb-6" x-ref="previewContainer">
+                <div class="flex-1 overflow-y-auto px-6 pb-6 flex flex-col justify-start" x-ref="previewContainer">
                     <template x-if="pages.length === 0"><div class="text-center text-gray-500 p-8 border-2 border-dashed rounded-lg">Your form preview will appear here.</div></template>
                     <div id="visible-print-area" class="pb-4" :style="pageContainerStyle">
                         <template x-for="(page, pIndex) in pages" :key="'page-'+pIndex">
@@ -142,14 +147,14 @@
                                         <template x-for="(item, i) in page.items" :key="'i-'+i"><div><div x-show="item.type === 'section_title'" class="section-title" x-text="item.text"></div><div x-show="item.type === 'field'" class="field-row"><span class="field-label" x-text="item.text"></span><span class="field-line"></span></div></div></template>
                                         <div x-show="showBranding || pages.length > 1"
                                              style="position: absolute; left: 0.75in; right: 0.75in;
-                                                     bottom: 0.7in; /* Keep it higher */
-                                                     border-top: 1px solid #ddd; padding-top: 8px;
-                                                     font-size: 0.75rem; color: #555; line-height: 1;
-                                                     display: flex;
-                                                     justify-content: space-between;
-                                                     align-items: center;">
-                                             <span x-show="showBranding" style="margin-right: 1rem;" x-text="footerText"></span>
-                                             <span x-text="`Page ${pIndex+1} of ${pages.length}`"></span>
+                                                    bottom: 0.7in; /* Keep it higher */
+                                                    border-top: 1px solid #ddd; padding-top: 8px;
+                                                    font-size: 0.75rem; color: #555; line-height: 1;
+                                                    display: flex;
+                                                    justify-content: space-between;
+                                                    align-items: center;">
+                                            <span x-show="showBranding" style="margin-right: 1rem;" x-text="footerText"></span>
+                                            <span x-text="`Page ${pIndex+1} of ${pages.length}`"></span>
                                         </div>
                                     </div>
                                 </div>
