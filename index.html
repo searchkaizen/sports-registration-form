@@ -138,7 +138,7 @@
                             <div class="print-page-wrapper" :style="pageScaleStyle">
                                 <div class="print-page">
                                     <div class="print-page-inner">
-                                        <template x-if="pIndex === 0"><div><div x-show="logoUrl" class="text-center mb-4"><img :src="logoUrl" alt="Team Logo" style="max-height: 1.2in; max-width: 100%; margin: 0 auto;" /></div><h1 class="form-title" x-text="formSchema.title"></h1><p x-show="formSchema.introText" class="intro-text" x-text="formSchema.introText"></p></div></template>
+                                        <template x-if="pIndex === 0"><div><div x-show="logoUrl" class="text-center mb-4"><img :src="logoUrl" alt="Team Logo" style="max-height: 1.2in; max-width: 100%; margin: 0 auto;" /></div><img src="https://media.licdn.com/dms/image/v2/D4E0BAQHsQvepcnje9w/company-logo_200_200/company-logo_200_200/0/1685554480652/mvp_visuals_logo?e=2147483647&v=beta&t=kyuxJsbRSzzdJpuU93ytVRKAxpl-qPzCoQGqNnNNkPE"><h1 class="form-title" x-text="formSchema.title"></h1><p x-show="formSchema.introText" class="intro-text" x-text="formSchema.introText"></p></div></template>
                                         <template x-for="(item, i) in page.items" :key="'i-'+i"><div><div x-show="item.type === 'section_title'" class="section-title" x-text="item.text"></div><div x-show="item.type === 'field'" class="field-row"><span class="field-label" x-text="item.text"></span><span class="field-line"></span></div></div></template>
                                         <div x-show="showBranding || pages.length > 1"
                                              style="position: absolute; left: 0.75in; right: 0.75in;
