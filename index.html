@@ -453,9 +453,66 @@ soccer: {
                         this.pages = pages.slice(0, MAX_PAGES); if(this.showPreview) this.$nextTick(() => this.calculateScale());
                     },
 
-                    async _generateFullPDF() { if (!this.pages.length) return null; const wPO = this.showPreview; if (!wPO) { this.showPreview = true; await Alpine.nextTick(); } document.body.classList.add('is-exporting'); const pN = document.querySelectorAll('#visible-print-area .print-page'); if (pN.length === 0) { console.error("Render area empty"); document.body.classList.remove('is-exporting'); if (!wPO) this.showPreview = false; return null; } const oSS = this.pageScaleStyle; this.pageScaleStyle = 'transform: none !important; margin-bottom: 0 !important;'; this.pageContainerStyle = 'height: auto !important;'; await Alpine.nextTick(); const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'letter', putOnlyUsedFonts: true }); const LWPT = doc.internal.pageSize.getWidth(); const LHPT = doc.internal.pageSize.getHeight(); for (let i = 0; i < pN.length; i++) { const n = pN[i]; this.loadingText = `Rendering Page ${i + 1} of ${pN.length}...`; const cv = await html2canvas(n, { scale: 3, useCORS: true, }); const iD = cv.toDataURL('image/png'); if (i > 0) doc.addPage(); doc.addImage(iD, 'PNG', 0, 0, LWPT, LHPT); } document.body.classList.remove('is-exporting'); this.pageScaleStyle = oSS; if (!wPO) { this.showPreview = false; } else { this.$nextTick(() => this.calculateScale()); } return doc; },
-                    async downloadPDF() { if(this.isDownloading)return; this.isDownloading=true; this.loadingText='Generating Download...'; const doc=await this._generateFullPDF(); if(doc){const fN=`${(this.formSchema.title||'MVP_Form').replace(/\s+/g,'_')}.pdf`; doc.save(fN);} this.isDownloading=false; this.loadingText=''; },
-                    async printPDF() { /* Removed */ }
+async _generateFullPDF() {
+  if (!this.pages.length) return null;
+
+  const wasPreviewOpen = this.showPreview;
+  if (!wasPreviewOpen) {
+    this.showPreview = true;
+    await Alpine.nextTick();
+  }
+
+  document.body.classList.add('is-exporting');
+  const pageNodes = document.querySelectorAll('#visible-print-area .print-page');
+
+  if (pageNodes.length === 0) {
+    console.error("Render area empty");
+    document.body.classList.remove('is-exporting');
+    if (!wasPreviewOpen) this.showPreview = false;
+    return null;
+  }
+
+  const originalScaleStyle = this.pageScaleStyle;
+  this.pageScaleStyle = 'transform: none !important; margin-bottom: 0 !important;';
+  this.pageContainerStyle = 'height: auto !important;';
+  await Alpine.nextTick();
+
+  // ✅ Enable compression inside jsPDF
+  const doc = new jsPDF({
+    orientation: 'p',
+    unit: 'pt',
+    format: 'letter',
+    putOnlyUsedFonts: true,
+    compress: true
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  for (let i = 0; i < pageNodes.length; i++) {
+    const node = pageNodes[i];
+    this.loadingText = `Rendering Page ${i + 1} of ${pageNodes.length}...`;
+
+    // ✅ Lower scale + JPEG compression for massive size reduction
+    const canvas = await html2canvas(node, { scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL('image/jpeg', 0.85); // 85% quality
+
+    if (i > 0) doc.addPage();
+    doc.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+  }
+
+  document.body.classList.remove('is-exporting');
+  this.pageScaleStyle = originalScaleStyle;
+
+  if (!wasPreviewOpen) {
+    this.showPreview = false;
+  } else {
+    this.$nextTick(() => this.calculateScale());
+  }
+
+  return doc;
+},
+
                 }
             });
         });
