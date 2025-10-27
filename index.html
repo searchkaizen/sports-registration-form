@@ -274,13 +274,69 @@
                         {title:"Emergency Contact (ICE)",fields:[{label:"Contact Name (ICE)", type: 'text'},{label:"Relationship", type: 'text'},{label:"Phone Number", type: 'text'}]},
                         {title:"Waiver & Acknowledgment",fields:[{label:"Known Medical Conditions or Allergies", type: 'text'}, {label:"I acknowledge all race rules and risks of participation.", type: 'checkbox'},{label:"Runner Signature", type: 'signature'}]}
                     ]}},
-                    soccer:{id:'soccer',name:'Soccer',icon:'⚽',description:'Jersey size, guardian contact, waiver.',schema:{title:"Youth Soccer Camp Registration",introText:"Camp runs from July 15-19. Please pack a lunch and water bottle.",sections:[
-                        {title:"Player Information",fields:[{label:"Player Name", type: 'text'},{label:"Date of Birth", type: 'text'},{label:"Gender", type: 'text'}, {label: "Jersey Size", type: 'text'}]},
-                        {title:"On the Field",fields:[{label: "Skill Level (Rec / Club / School Team)", type: 'text'}, {label: "Preferred Position(s) (Goalie/Defense/Mid/Forward)", type: 'text'}, {label: "Years Played", type: 'text'}]},
-                        {title:"Parent/Guardian Contact",fields:[{label:"Parent/Guardian Name", type: 'text'},{label:"Email", type: 'text'},{label:"Mobile Phone", type: 'text'}]},
-                        {title:"Player Safety & Medical",fields:[{label:"Emergency Contact Name", type: 'text'},{label:"Emergency Contact Phone", type: 'text'},{label:"Known Allergies or Medical Conditions", type: 'text'},{label:"Insurance Provider", type: 'text'},{label:"Policy Number", type: 'text'}]},
-                        {title:"Waivers & Consent",fields:[{label:"I agree to the liability waiver and consent to treatment.", type: 'checkbox'},{label:"I grant consent for photo/video usage.", type: 'checkbox'},{label:"Parent/Guardian Signature", type: 'signature'}]}
-                    ]}},
+soccer: {
+    id: 'soccer',
+    name: 'Soccer',
+    icon: '⚽',
+    description: 'Player info, uniforms, contacts, waivers.',
+    schema: {
+        title: "Youth Soccer Registration Form",
+        introText: "Please complete all sections below. Include player details, parent contact info, uniform preferences, and waivers so your player can be rostered before the first game.",
+        sections: [
+            {title:"Season Details",fields:[
+                {label:"Season (e.g., Spring 2026)", type:'text'},
+                {label:"Division (U10 Coed / U12 Coed)", type:'text'},
+                {label:"Team or Club Name", type:'text'}
+            ]},
+            {title:"Player Information",fields:[
+                {label:"Player First Name", type:'text'},
+                {label:"Player Last Name", type:'text'},
+                {label:"Date of Birth (MM/DD/YYYY)", type:'text'},
+                {label:"School or Neighborhood", type:'text'},
+                {label:"Preferred Position (GK / Defense / Midfield / Forward)", type:'text'}
+            ]},
+            {title:"Parent / Guardian Information",fields:[
+                {label:"Primary Parent / Guardian Full Name", type:'text'},
+                {label:"Relationship to Player", type:'text'},
+                {label:"Email", type:'text'},
+                {label:"Mobile Phone", type:'text'},
+                {label:"Secondary Parent / Guardian Name (optional)", type:'text'}
+            ]},
+            {title:"Emergency and Medical Details",fields:[
+                {label:"Emergency Contact Name", type:'text'},
+                {label:"Emergency Contact Phone", type:'text'},
+                {label:"Allergies or Medical Notes", type:'text'},
+                {label:"Physician or Clinic", type:'text'}
+            ]},
+            {title:"Uniform and Volunteer Options",fields:[
+                {label:"Need a Uniform Kit? (Yes / No)", type:'text'},
+                {label:"Jersey Size (YS–AM)", type:'text'},
+                {label:"Shorts Size (YS–AM)", type:'text'},
+                {label:"Preferred Jersey Number", type:'text'},
+                {label:"Volunteer Role Interest (Coach / Team Parent / Field Crew)", type:'text'}
+            ]},
+            {title:"Payment and Waivers",fields:[
+                {label:"Registration Fee – $150", type:'text'},
+                {label:"Uniform Kit – $35 (optional)", type:'text'},
+                {label:"Payment Method (Card / Check / Transfer)", type:'text'},
+                {label:"Liability Waiver: I understand and accept the risks of youth sports participation.", type:'checkbox'},
+                {label:"Emergency Consent: I authorize first-aid treatment in case of injury.", type:'checkbox'},
+                {label:"Parent / Guardian Signature", type:'signature'},
+                {label:"Date", type:'text'}
+            ]},
+            {title:"Refund and Conduct Agreements",fields:[
+                {label:"Refund Policy: Refunds available through Feb 24; after that, pro-rated minus uniform cost.", type:'checkbox'},
+                {label:"Family Code of Conduct: We agree to model good sportsmanship and respect for coaches and officials.", type:'checkbox'}
+            ]},
+            {title:"Communication and Photo Permissions",fields:[
+                {label:"Photo / Media Consent (Yes / No)", type:'text'},
+                {label:"Preferred Communication Method (Email / Text / WhatsApp)", type:'text'},
+                {label:"Send Confirmations by Preferred Channel (Yes / No)", type:'text'}
+            ]}
+        ]
+    }
+},
+
                     basketball:{id:'basketball',name:'Basketball',icon:'🏀',description:'Position, grade, experience.',schema:{title:"Basketball Tryout Sign-Up",introText:null,sections:[
                         {title:"Player Information",fields:[{label:"Player Name", type: 'text'},{label:"Date of Birth", type: 'text'},{label:"Grade (as of Fall)", type: 'text'}]},
                         {title:"On the Court",fields:[{label:"Preferred Position (Guard/Forward/Center)", type: 'text'},{label:"Skill Level (Rec / School Team / Club)", type: 'text'},{label:"Jersey # Request (1st, 2nd, 3rd choice)", type: 'text'},{label:"Previous Team", type: 'text'},{label:"Years Played", type: 'text'}]},
